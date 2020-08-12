@@ -15,6 +15,7 @@ const light = new Light(
   0, 5, 0,      // position
   255, 255, 255 // color
 );
+const ambientLightIntensity = [130, 130, 130];
 
 function computeDiffuse(color, normal, lightDirection) {
   let diffuse = [];
@@ -23,6 +24,14 @@ function computeDiffuse(color, normal, lightDirection) {
         Math.max(0, vec3.dot(normal, lightDirection));
   }
   return diffuse;
+}
+
+function computeAmbient(ambientColor) {
+  let ambient = [];
+  for (let c = 0; c < 3; c++) {
+    ambient[c] = (ambientColor[c] / 255) * (ambientLightIntensity[c] / 255);
+  }
+  return ambient;
 }
 
 function render() {
@@ -56,17 +65,29 @@ function render() {
       }
 
       // color the pixel
-      let color = backgroundColor;
+      let color = [];
       if (closest != null) {
+        // pre-computations
         const surfaceColor = closest.color;
         const point = ray.pointAtParameter(tMin);
         const normal = closest.normal(point);
         let lightDirection = vec3.subtract(vec3.create(), light.position, point);
         vec3.normalize(lightDirection, lightDirection);
-        color = computeDiffuse(surfaceColor, normal, lightDirection).map(function(x) {
-          return 255 * x;
-        });
+
+        // compute diffuse, ambient
+        const diffuse = computeDiffuse(surfaceColor, normal, lightDirection);
+        const ambient = computeAmbient(surfaceColor);
+
+        // compute final color
+        for (let c = 0; c < 3; c++) {
+          color[c] = ambient[c] + diffuse[c];
+          // clamp between 0 and 1, then multiply by 255
+          color[c] = Math.min(1, Math.max(0, color[c])) * 255;
+        }
+      } else {
+        color = backgroundColor;
       }
+
       ctx.fillStyle = "rgb(" +
         color[0] + ", " +
         color[1] + ", " +
