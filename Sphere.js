@@ -7,6 +7,12 @@ export class Sphere {
     this.color = [r, g, b];
   }
 
+  normal(point) {
+    let normal = vec3.subtract(vec3.create(), point, this.center);
+    vec3.normalize(normal, normal);
+    return normal;
+  }
+
   intersects(ray) {
     const oc = vec3.subtract(vec3.create(), ray.origin, this.center);
     const a = vec3.dot(ray.direction, ray.direction);

@@ -1,6 +1,7 @@
 const { vec3 } = glMatrix;
 import { Ray } from "./Ray.js";
 import { Sphere } from "./Sphere.js";
+import { Light } from "./Light.js";
 
 const nx = 500; // canvas width
 const ny = 500; // canvas height
@@ -10,6 +11,19 @@ const b = -2;   // position of the bottom edge of the image
 const t = 2;    // position of the top edge of the image
 const d = 8;    // distance from origin to the image
 const backgroundColor = [255, 255, 255];
+const light = new Light(
+  0, 5, 0,      // position
+  255, 255, 255 // color
+);
+
+function computeDiffuse(color, normal, lightDirection) {
+  let diffuse = [];
+  for (let c = 0; c < 3; c++) {
+    diffuse[c] = (color[c] / 255) * (light.color[c] / 255) *
+        Math.max(0, vec3.dot(normal, lightDirection));
+  }
+  return diffuse;
+}
 
 function render() {
   // add spheres
@@ -44,7 +58,14 @@ function render() {
       // color the pixel
       let color = backgroundColor;
       if (closest != null) {
-        color = closest.color;
+        const surfaceColor = closest.color;
+        const point = ray.pointAtParameter(tMin);
+        const normal = closest.normal(point);
+        let lightDirection = vec3.subtract(vec3.create(), light.position, point);
+        vec3.normalize(lightDirection, lightDirection);
+        color = computeDiffuse(surfaceColor, normal, lightDirection).map(function(x) {
+          return 255 * x;
+        });
       }
       ctx.fillStyle = "rgb(" +
         color[0] + ", " +
