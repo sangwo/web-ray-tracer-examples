@@ -34,11 +34,20 @@ function computeAmbient(ambientColor) {
   return ambient;
 }
 
+function computeSpecular(specularColor, normal, halfVector, shininess) {
+  let specular = [];
+  for (let c = 0; c < 3; c++) {
+    specular[c] = (specularColor[c] / 255) * (light.color[c] / 255) *
+        Math.pow(Math.max(0, vec3.dot(normal, halfVector)), shininess);
+  }
+  return specular;
+}
+
 function render() {
   // add spheres
   let objects = [
-    new Sphere(0, 0, 0, 1, 255, 0, 0),
-    new Sphere(1, 1, -3, 1, 0, 0, 255)
+    new Sphere(0, 0, 0, 1, 255, 0, 0, 50),
+    new Sphere(1, 1, -3, 1, 0, 0, 255, 200)
   ];
 
   const canvas = document.getElementById("rendered-image");
@@ -68,19 +77,27 @@ function render() {
       let color = [];
       if (closest != null) {
         // pre-computations
-        const surfaceColor = closest.color;
         const point = ray.pointAtParameter(tMin);
         const normal = closest.normal(point);
         let lightDirection = vec3.subtract(vec3.create(), light.position, point);
         vec3.normalize(lightDirection, lightDirection);
+        let viewDirection = vec3.subtract(vec3.create(), ray.origin, point);
+        vec3.normalize(viewDirection, viewDirection);
+        let halfVector = vec3.add(vec3.create(), viewDirection, lightDirection);
+        vec3.normalize(halfVector, halfVector);
+        const diffuseColor = closest.color;
+        const ambientColor = closest.ambientColor;
+        const specularColor = closest.specularColor;
+        const shininess = closest.shininess;
 
-        // compute diffuse, ambient
-        const diffuse = computeDiffuse(surfaceColor, normal, lightDirection);
-        const ambient = computeAmbient(surfaceColor);
+        // compute diffuse, ambient, specular
+        const diffuse = computeDiffuse(diffuseColor, normal, lightDirection);
+        const ambient = computeAmbient(ambientColor);
+        const specular = computeSpecular(specularColor, normal, halfVector, shininess)
 
         // compute final color
         for (let c = 0; c < 3; c++) {
-          color[c] = ambient[c] + diffuse[c];
+          color[c] = ambient[c] + diffuse[c] + specular[c];
           // clamp between 0 and 1, then multiply by 255
           color[c] = Math.min(1, Math.max(0, color[c])) * 255;
         }
