@@ -1,7 +1,7 @@
 const { vec3 } = glMatrix;
 
 export class Sphere {
-  constructor(x, y, z, radius, r, g, b, shininess) {
+  constructor(x, y, z, radius, r, g, b, shininess=100) {
     this.center = vec3.fromValues(x, y, z);
     this.radius = radius;
     this.color = [r, g, b];
@@ -10,7 +10,7 @@ export class Sphere {
     this.shininess = shininess;
   }
 
-  normal(point) {
+  normal(point, rayDirection=null) {
     let normal = vec3.subtract(vec3.create(), point, this.center);
     vec3.normalize(normal, normal);
     return normal;
