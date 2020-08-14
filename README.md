@@ -15,3 +15,7 @@ The above code results in the following images:
 
 <img src="./specular.png" alt="red and blue spheres with diffuse, ambient, specular" width="500">
 Notice the difference in highlights of the two spheres; the red sphere's shininess is set to 50 while the blue sphere's shininess is set to 200.
+
+**shadow**
+
+<img src="./shadow.png" alt="red sphere casts shadow on blue plane" width="500">
