@@ -61,6 +61,52 @@ function isInShadow(shadowRay, objects, tLight) {
   return shadowIntersect.obj == null;
 }
 
+function findColor(ray, objects) {
+  // find the intersection
+  const intersectData = intersection(ray, objects, Infinity);
+  const closest = intersectData.obj;
+  const tVal = intersectData.tVal;
+
+  // find color of the pixel
+  if (closest != null) {
+    // pre-computations
+    const point = ray.pointAtParameter(tVal);
+    const normal = closest.normal(point, ray.direction);
+    let lightDirection = vec3.subtract(vec3.create(), light.position, point);
+    vec3.normalize(lightDirection, lightDirection);
+    let viewDirection = vec3.subtract(vec3.create(), ray.origin, point);
+    vec3.normalize(viewDirection, viewDirection);
+    let halfVector = vec3.add(vec3.create(), viewDirection, lightDirection);
+    vec3.normalize(halfVector, halfVector);
+    const diffuseColor = closest.color;
+    const ambientColor = closest.ambientColor;
+    const specularColor = closest.specularColor;
+    const shininess = closest.shininess;
+
+    // compute diffuse, ambient, specular
+    const diffuse = computeDiffuse(diffuseColor, normal, lightDirection);
+    const ambient = computeAmbient(ambientColor);
+    const specular = computeSpecular(specularColor, normal, halfVector, shininess)
+
+    // compute shadow
+    const overPoint = vec3.add(vec3.create(), point,
+        vec3.scale(vec3.create(), normal, Math.pow(10, -4)));
+    const shadowRay = new Ray(overPoint, lightDirection);
+    const lightDistance = vec3.distance(point, light.position);
+    const shadow = isInShadow(shadowRay, objects, lightDistance);
+
+    // compute final color
+    let color = [];
+    for (let c = 0; c < 3; c++) {
+      color[c] = ambient[c] + (diffuse[c] + specular[c]) * shadow;
+      // clamp between 0 and 1, then multiply by 255
+      color[c] = Math.min(1, Math.max(0, color[c])) * 255;
+    }
+    return color;
+  }
+  return backgroundColor;
+}
+
 function render() {
   // add objects
   let objects = [
@@ -91,50 +137,8 @@ function render() {
       vec3.normalize(rayDirection, rayDirection);
       const ray = new Ray(rayOrigin, rayDirection);
 
-      // find the intersection
-      const intersectData = intersection(ray, objects, Infinity);
-      const closest = intersectData.obj;
-      const tVal = intersectData.tVal;
-
       // color the pixel
-      let color = [];
-      if (closest != null) {
-        // pre-computations
-        const point = ray.pointAtParameter(tVal);
-        const normal = closest.normal(point, ray.direction);
-        let lightDirection = vec3.subtract(vec3.create(), light.position, point);
-        vec3.normalize(lightDirection, lightDirection);
-        let viewDirection = vec3.subtract(vec3.create(), ray.origin, point);
-        vec3.normalize(viewDirection, viewDirection);
-        let halfVector = vec3.add(vec3.create(), viewDirection, lightDirection);
-        vec3.normalize(halfVector, halfVector);
-        const diffuseColor = closest.color;
-        const ambientColor = closest.ambientColor;
-        const specularColor = closest.specularColor;
-        const shininess = closest.shininess;
-
-        // compute diffuse, ambient, specular
-        const diffuse = computeDiffuse(diffuseColor, normal, lightDirection);
-        const ambient = computeAmbient(ambientColor);
-        const specular = computeSpecular(specularColor, normal, halfVector, shininess)
-
-        // compute shadow
-        const overPoint = vec3.add(vec3.create(), point,
-            vec3.scale(vec3.create(), normal, Math.pow(10, -4)));
-        const shadowRay = new Ray(overPoint, lightDirection);
-        const lightDistance = vec3.distance(point, light.position);
-        const shadow = isInShadow(shadowRay, objects, lightDistance);
-
-        // compute final color
-        for (let c = 0; c < 3; c++) {
-          color[c] = ambient[c] + (diffuse[c] + specular[c]) * shadow;
-          // clamp between 0 and 1, then multiply by 255
-          color[c] = Math.min(1, Math.max(0, color[c])) * 255;
-        }
-      } else {
-        color = backgroundColor;
-      }
-
+      const color = findColor(ray, objects);
       ctx.fillStyle = "rgb(" +
         color[0] + ", " +
         color[1] + ", " +
