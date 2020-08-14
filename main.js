@@ -17,6 +17,7 @@ const light = new Light(
   255, 255, 255 // color
 );
 const ambientLightIntensity = [130, 130, 130];
+const [samplingWidth, samplingHeight] = [4, 4];
 
 function intersection(ray, objects, tMin) {
   let closest = null;
@@ -107,6 +108,40 @@ function findColor(ray, objects) {
   return backgroundColor;
 }
 
+function renderPixel(i, j, objects, ctx) {
+  let color = [0, 0, 0];
+  // for each sub-pixel
+  for (let ic = i; ic < i + 1; ic += 1 / samplingWidth) {
+    for (let jc = j; jc < j + 1; jc += 1 / samplingHeight) {
+      // generate a ray
+      const u = l + (r - l) * (ic + 1 / (2 * samplingWidth)) / nx;
+      const v = b + (t - b) * (jc + 1 / (2 * samplingHeight)) / ny;
+      const rayOrigin = vec3.fromValues(0, 0, 15);
+      let rayDirection = vec3.fromValues(u, v, -d);
+      vec3.normalize(rayDirection, rayDirection);
+      const ray = new Ray(rayOrigin, rayDirection);
+
+      // find and accumulate color of the sub-pixel
+      const subpixelColor = findColor(ray, objects);
+      for (let c = 0; c < 3; c++) {
+        color[c] += subpixelColor[c];
+      }
+    }
+  }
+  // average
+  for (let c = 0; c < 3; c++) {
+    color[c] = color[c] / (samplingWidth * samplingHeight);
+  }
+
+  // color the pixel
+  ctx.fillStyle = "rgb(" +
+    color[0] + ", " +
+    color[1] + ", " +
+    color[2] +
+  ")";
+  ctx.fillRect(i, ny - 1 - j, 1, 1);
+}
+
 function render() {
   // add objects
   let objects = [
@@ -129,22 +164,7 @@ function render() {
   const ctx = canvas.getContext("2d");
   for (let i = 0; i < nx; i++) {
     for (let j = 0; j < ny; j++) {
-      // generate a ray
-      const u = l + (r - l) * (i + 0.5) / nx;
-      const v = b + (t - b) * (j + 0.5) / ny;
-      const rayOrigin = vec3.fromValues(0, 0, 15);
-      let rayDirection = vec3.fromValues(u, v, -d);
-      vec3.normalize(rayDirection, rayDirection);
-      const ray = new Ray(rayOrigin, rayDirection);
-
-      // color the pixel
-      const color = findColor(ray, objects);
-      ctx.fillStyle = "rgb(" +
-        color[0] + ", " +
-        color[1] + ", " +
-        color[2] +
-      ")";
-      ctx.fillRect(i, ny - 1 - j, 1, 1);
+      renderPixel(i, j, objects, ctx);
     }
   }
 }
