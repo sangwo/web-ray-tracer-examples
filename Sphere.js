@@ -1,13 +1,21 @@
 const { vec3 } = glMatrix;
 
 export class Sphere {
-  constructor(x, y, z, radius, r, g, b, shininess=100) {
+  constructor(x, y, z, radius, r, g, b) {
     this.center = vec3.fromValues(x, y, z);
     this.radius = radius;
     this.color = [r, g, b];
     this.ambientColor = [r, g, b];
     this.specularColor = [255, 255, 255];
-    this.shininess = shininess;
+    this.shininess = 100;
+  }
+
+  setSpecularColor(r, g, b) {
+    this.specularColor = [r, g, b];
+  }
+
+  setShininess(s) {
+    this.shininess = s;
   }
 
   normal(point, rayDirection=null) {
