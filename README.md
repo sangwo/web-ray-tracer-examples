@@ -1,7 +1,5 @@
 # Shading
-Sample code for [ray tracing tutorial](https://github.com/sangwo/web-ray-tracer/blob/master/docs/04_shading.md#specular-phong).
-
-Results:
+Sample code for [ray tracing tutorial](https://github.com/sangwo/web-ray-tracer/blob/master/docs/04_shading.md).
 
 ## Diffuse only
 
